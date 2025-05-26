@@ -90,10 +90,9 @@
             right: 0;
             pointer-events: auto;
         }
-        @media (max-width: 768px) {
+        @media (max-width: 768px) and (orientation: portrait) {
             .map-title {
-                font-size: 1.2em;
-                padding: 5px 10px;
+                display: none;
             }
         }
     </style>
@@ -107,19 +106,9 @@
     <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
     
     <script>
-        // Check if mobile device
-        const isMobile = window.innerWidth <= 768;
-        
         // Karte initialisieren (ohne festen Zoom)
         const map = L.map('map');
-
-        // Get title element
         const titleElement = document.querySelector('.map-title');
-        
-        // Hide title initially if mobile
-        if (isMobile) {
-            titleElement.classList.add('hidden');
-        }
 
         // Kartenlayer definieren
         const satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
@@ -236,28 +225,24 @@
 
         // Array für alle Marker
         const markers = [];
+        let activePopup = null;
 
-        // Funktion zur Überprüfung der Überlappung
+        // Funktion zur Überprüfung der Titelüberlappung
         function checkTitleOverlap() {
-            if (isMobile) return;
-            
-            const popups = document.querySelectorAll('.leaflet-popup');
-            let shouldHide = false;
-            
-            popups.forEach(popup => {
-                const popupRect = popup.getBoundingClientRect();
-                const titleRect = titleElement.getBoundingClientRect();
-                
-                // Einfache Kollisionserkennung
-                if (!(popupRect.right < titleRect.left || 
-                      popupRect.left > titleRect.right || 
-                      popupRect.bottom < titleRect.top || 
-                      popupRect.top > titleRect.bottom)) {
-                    shouldHide = true;
-                }
-            });
-            
-            if (shouldHide) {
+            if (!activePopup) {
+                titleElement.classList.remove('hidden');
+                return;
+            }
+
+            const titleRect = titleElement.getBoundingClientRect();
+            const popupRect = activePopup._container.getBoundingClientRect();
+
+            const overlap = !(titleRect.right < popupRect.left || 
+                             titleRect.left > popupRect.right || 
+                             titleRect.bottom < popupRect.top || 
+                             titleRect.top > popupRect.bottom);
+
+            if (overlap) {
                 titleElement.classList.add('hidden');
             } else {
                 titleElement.classList.remove('hidden');
@@ -282,10 +267,14 @@
             `;
             
             marker.bindPopup(popupContent);
-            
-            // Event-Listener für Popup-Öffnen/Schließen
-            marker.on('popupopen', checkTitleOverlap);
-            marker.on('popupclose', checkTitleOverlap);
+            marker.on('popupopen', function() {
+                activePopup = marker.getPopup();
+                checkTitleOverlap();
+            });
+            marker.on('popupclose', function() {
+                activePopup = null;
+                titleElement.classList.remove('hidden');
+            });
             
             markers.push(marker);
         });
@@ -294,8 +283,14 @@
         const group = new L.featureGroup(markers);
         map.fitBounds(group.getBounds().pad(0.2)); // 20% padding um die Marker
 
-        // Auch auf Fenstergrößenänderung reagieren
-        window.addEventListener('resize', checkTitleOverlap);
+        // Überlappung bei Bewegung der Karte überprüfen
+        map.on('move', checkTitleOverlap);
+        map.on('moveend', checkTitleOverlap);
+
+        // Orientierungswechsel bei Mobilgeräten behandeln
+        window.addEventListener('resize', function() {
+            checkTitleOverlap();
+        });
     </script>
 </body>
 </html>
