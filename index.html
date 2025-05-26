@@ -3,7 +3,7 @@
 <head>
     <title>Top 10 Sehenswürdigkeiten in Rom</title>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     
     <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
@@ -62,46 +62,38 @@
         }
         .map-title {
             position: absolute;
-            top: 10px;
+            top: 20px;
             left: 50%;
             transform: translateX(-50%);
             z-index: 1000;
             font-size: 1.5em;
             font-weight: bold;
             text-shadow: 1px 1px 2px white;
-            padding: 6px 12px;
+            padding: 8px 15px;
             background: rgba(255, 255, 255, 0.7);
             border-radius: 5px;
             white-space: nowrap;
-            transition: all 0.3s ease;
-            max-width: 90%;
-            text-align: center;
+            transition: opacity 0.3s ease;
         }
         .map-title.hidden {
             opacity: 0;
             pointer-events: none;
         }
-        .map-title.small-screen {
-            font-size: 1.1em;
-            padding: 4px 8px;
-            top: 5px;
-        }
-        .leaflet-bottom.leaflet-center {
+        .leaflet-bottom.leaflet-left {
             width: 100%;
             pointer-events: none;
         }
         .leaflet-control-scale {
-            margin: 0 auto !important;
+            margin-left: auto;
+            margin-right: auto;
             left: 0;
             right: 0;
             pointer-events: auto;
         }
-        
-        @media (max-width: 480px) {
+        @media (max-width: 768px) {
             .map-title {
-                font-size: 1.1em;
-                padding: 4px 8px;
-                top: 5px;
+                font-size: 1.2em;
+                padding: 5px 10px;
             }
         }
     </style>
@@ -115,17 +107,19 @@
     <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
     
     <script>
-        // Detect small screens
-        const isSmallScreen = window.innerWidth <= 480;
-        const titleElement = document.querySelector('.map-title');
+        // Check if mobile device
+        const isMobile = window.innerWidth <= 768;
         
-        // Adjust title for small screens
-        if (isSmallScreen) {
-            titleElement.classList.add('small-screen');
-        }
-
         // Karte initialisieren (ohne festen Zoom)
         const map = L.map('map');
+
+        // Get title element
+        const titleElement = document.querySelector('.map-title');
+        
+        // Hide title initially if mobile
+        if (isMobile) {
+            titleElement.classList.add('hidden');
+        }
 
         // Kartenlayer definieren
         const satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
@@ -147,14 +141,11 @@
             "OpenStreetMap": osmLayer
         };
         
-        const layersControl = L.control.layers(baseLayers, null, {
-            position: 'topright',
-            collapsed: isSmallScreen // Collapse on small screens
-        }).addTo(map);
+        L.control.layers(baseLayers, null, {position: 'topright'}).addTo(map);
 
         // Maßstabsleiste hinzufügen (zentriert, in Kilometern)
         L.control.scale({
-            position: 'bottomcenter',
+            position: 'bottomleft',
             metric: true,
             imperial: false,
             maxWidth: 200
@@ -248,14 +239,16 @@
 
         // Funktion zur Überprüfung der Überlappung
         function checkTitleOverlap() {
+            if (isMobile) return;
+            
             const popups = document.querySelectorAll('.leaflet-popup');
             let shouldHide = false;
             
             popups.forEach(popup => {
-                const titleRect = titleElement.getBoundingClientRect();
                 const popupRect = popup.getBoundingClientRect();
+                const titleRect = titleElement.getBoundingClientRect();
                 
-                // Überprüfen auf Überlappung
+                // Einfache Kollisionserkennung
                 if (!(popupRect.right < titleRect.left || 
                       popupRect.left > titleRect.right || 
                       popupRect.bottom < titleRect.top || 
@@ -264,7 +257,6 @@
                 }
             });
             
-            // Titel anpassen
             if (shouldHide) {
                 titleElement.classList.add('hidden');
             } else {
@@ -292,16 +284,8 @@
             marker.bindPopup(popupContent);
             
             // Event-Listener für Popup-Öffnen/Schließen
-            marker.on('popupopen', () => {
-                checkTitleOverlap();
-                // Regelmäßige Überprüfung bei Bewegung der Karte
-                map.on('move', checkTitleOverlap);
-            });
-            
-            marker.on('popupclose', () => {
-                titleElement.classList.remove('hidden');
-                map.off('move', checkTitleOverlap);
-            });
+            marker.on('popupopen', checkTitleOverlap);
+            marker.on('popupclose', checkTitleOverlap);
             
             markers.push(marker);
         });
@@ -310,23 +294,8 @@
         const group = new L.featureGroup(markers);
         map.fitBounds(group.getBounds().pad(0.2)); // 20% padding um die Marker
 
-        // Adjust title position if it overlaps with layer control
-        function adjustTitlePosition() {
-            if (isSmallScreen) {
-                const layersControlRect = document.querySelector('.leaflet-control-layers').getBoundingClientRect();
-                const titleRect = titleElement.getBoundingClientRect();
-                
-                if (titleRect.right > layersControlRect.left - 10) {
-                    titleElement.style.maxWidth = `${window.innerWidth - layersControlRect.width - 30}px`;
-                    titleElement.style.whiteSpace = 'normal';
-                    titleElement.style.lineHeight = '1.2em';
-                }
-            }
-        }
-
-        // Initial adjustment and on resize
-        adjustTitlePosition();
-        window.addEventListener('resize', adjustTitlePosition);
+        // Auch auf Fenstergrößenänderung reagieren
+        window.addEventListener('resize', checkTitleOverlap);
     </script>
 </body>
 </html>
