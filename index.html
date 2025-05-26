@@ -3,7 +3,7 @@
 <head>
     <title>Top 10 Sehenswürdigkeiten in Rom</title>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     
     <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
@@ -62,22 +62,29 @@
         }
         .map-title {
             position: absolute;
-            top: 20px;
+            top: 10px;
             left: 50%;
             transform: translateX(-50%);
             z-index: 1000;
             font-size: 1.5em;
             font-weight: bold;
             text-shadow: 1px 1px 2px white;
-            padding: 8px 15px;
+            padding: 6px 12px;
             background: rgba(255, 255, 255, 0.7);
             border-radius: 5px;
             white-space: nowrap;
-            transition: opacity 0.3s ease;
+            transition: all 0.3s ease;
+            max-width: 90%;
+            text-align: center;
         }
         .map-title.hidden {
             opacity: 0;
             pointer-events: none;
+        }
+        .map-title.small-screen {
+            font-size: 1.1em;
+            padding: 4px 8px;
+            top: 5px;
         }
         .leaflet-bottom.leaflet-center {
             width: 100%;
@@ -88,6 +95,14 @@
             left: 0;
             right: 0;
             pointer-events: auto;
+        }
+        
+        @media (max-width: 480px) {
+            .map-title {
+                font-size: 1.1em;
+                padding: 4px 8px;
+                top: 5px;
+            }
         }
     </style>
 </head>
@@ -100,6 +115,15 @@
     <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
     
     <script>
+        // Detect small screens
+        const isSmallScreen = window.innerWidth <= 480;
+        const titleElement = document.querySelector('.map-title');
+        
+        // Adjust title for small screens
+        if (isSmallScreen) {
+            titleElement.classList.add('small-screen');
+        }
+
         // Karte initialisieren (ohne festen Zoom)
         const map = L.map('map');
 
@@ -123,11 +147,14 @@
             "OpenStreetMap": osmLayer
         };
         
-        L.control.layers(baseLayers, null, {position: 'topright'}).addTo(map);
+        const layersControl = L.control.layers(baseLayers, null, {
+            position: 'topright',
+            collapsed: isSmallScreen // Collapse on small screens
+        }).addTo(map);
 
         // Maßstabsleiste hinzufügen (zentriert, in Kilometern)
         L.control.scale({
-            position: 'bottomright',
+            position: 'bottomcenter',
             metric: true,
             imperial: false,
             maxWidth: 200
@@ -218,7 +245,6 @@
 
         // Array für alle Marker
         const markers = [];
-        const titleElement = document.querySelector('.map-title');
 
         // Funktion zur Überprüfung der Überlappung
         function checkTitleOverlap() {
@@ -283,6 +309,24 @@
         // Karte so zoomen, dass alle Marker sichtbar sind
         const group = new L.featureGroup(markers);
         map.fitBounds(group.getBounds().pad(0.2)); // 20% padding um die Marker
+
+        // Adjust title position if it overlaps with layer control
+        function adjustTitlePosition() {
+            if (isSmallScreen) {
+                const layersControlRect = document.querySelector('.leaflet-control-layers').getBoundingClientRect();
+                const titleRect = titleElement.getBoundingClientRect();
+                
+                if (titleRect.right > layersControlRect.left - 10) {
+                    titleElement.style.maxWidth = `${window.innerWidth - layersControlRect.width - 30}px`;
+                    titleElement.style.whiteSpace = 'normal';
+                    titleElement.style.lineHeight = '1.2em';
+                }
+            }
+        }
+
+        // Initial adjustment and on resize
+        adjustTitlePosition();
+        window.addEventListener('resize', adjustTitlePosition);
     </script>
 </body>
 </html>
