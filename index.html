@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <title>Top 10 Sehenswürdigkeiten in Rom</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+        }
+        #map {
+            width: 100%;
+            height: 100vh;
+        }
+        .landmark-info {
+            max-width: 250px;
+        }
+        .landmark-info h3 {
+            margin-top: 0;
+            color: #2c3e50;
+        }
+        .yellow-marker {
+            position: absolute;
+            width: 24px;
+            height: 24px;
+            left: -12px;
+            top: -12px;
+            transform: rotate(45deg);
+            background: #FFD700;
+            border: 2px solid #FFA500;
+            border-radius: 24px 24px 0;
+        }
+        .yellow-marker::after {
+            content: "";
+            width: 10px;
+            height: 10px;
+            margin: 7px 0 0 7px;
+            background: #FFFFFF;
+            position: absolute;
+            border-radius: 50%;
+        }
+        .copyright {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            background: rgba(255, 255, 255, 0.7);
+            padding: 3px 8px;
+            border-radius: 3px;
+            font-size: 0.8em;
+            z-index: 1000;
+        }
+        .leaflet-control-layers {
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 5px;
+            padding: 5px;
+        }
+        .map-title {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1000;
+            font-size: 1.5em;
+            font-weight: bold;
+            text-shadow: 1px 1px 2px white;
+            padding: 8px 15px;
+            background: rgba(255, 255, 255, 0.7);
+            border-radius: 5px;
+            white-space: nowrap;
+            transition: opacity 0.3s ease;
+        }
+        .map-title.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+        .leaflet-bottom.leaflet-center {
+            width: 100%;
+            pointer-events: none;
+        }
+        .leaflet-control-scale {
+            margin: 0 auto !important;
+            left: 0;
+            right: 0;
+            pointer-events: auto;
+        }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+    <div class="map-title">Top 10 Sehenswürdigkeiten in Rom</div>
+    <div class="copyright">©Stefan Georg Ackermann</div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    
+    <script>
+        // Karte initialisieren (ohne festen Zoom)
+        const map = L.map('map');
+
+        // Kartenlayer definieren
+        const satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+            attribution: 'Kartenbild © Esri',
+            name: 'Satellitenansicht'
+        });
+
+        const osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> Mitwirkende',
+            name: 'Straßenkarte'
+        });
+
+        // Standardmäßig Satellitenlayer anzeigen
+        satelliteLayer.addTo(map);
+
+        // Layer-Steuerung hinzufügen
+        const baseLayers = {
+            "Satellitenansicht": satelliteLayer,
+            "OpenStreetMap": osmLayer
+        };
+        
+        L.control.layers(baseLayers, null, {position: 'topright'}).addTo(map);
+
+        // Maßstabsleiste hinzufügen (zentriert, in Kilometern)
+        L.control.scale({
+            position: 'bottomright',
+            metric: true,
+            imperial: false,
+            maxWidth: 200
+        }).addTo(map);
+
+        // Top 10 Sehenswürdigkeiten in Rom
+        const landmarks = [
+            {
+                name: "Kolosseum",
+                coords: [41.8902, 12.4922],
+                description: "Das größte antike Amphitheater der Welt, das 50.000-80.000 Zuschauern Platz bot für Gladiatorenkämpfe und öffentliche Spektakel.",
+                visitors: "7,6 Millionen Besucher/Jahr",
+                wikipedia: "https://de.wikipedia.org/wiki/Kolosseum"
+            },
+            {
+                name: "Forum Romanum",
+                coords: [41.8925, 12.4853],
+                description: "Das Zentrum des öffentlichen Lebens im antiken Rom mit Ruinen von Regierungsgebäuden, Tempeln und Marktplätzen.",
+                visitors: "5,1 Millionen Besucher/Jahr",
+                wikipedia: "https://de.wikipedia.org/wiki/Forum_Romanum"
+            },
+            {
+                name: "Pantheon",
+                coords: [41.8986, 12.4768],
+                description: "Erstaunlich gut erhaltener antiker Tempel mit der größten unbewehrten Betonkuppel der Welt (43m Durchmesser).",
+                visitors: "8 Millionen Besucher/Jahr",
+                wikipedia: "https://de.wikipedia.org/wiki/Pantheon_(Rom)"
+            },
+            {
+                name: "Trevi-Brunnen",
+                coords: [41.9009, 12.4833],
+                description: "Größter Barockbrunnen Roms (26m hoch, 49m breit), berühmt für die Münzwurf-Tradition.",
+                visitors: "10 Millionen Besucher/Jahr",
+                wikipedia: "https://de.wikipedia.org/wiki/Trevi-Brunnen"
+            },
+            {
+                name: "Vatikanische Museen",
+                coords: [41.9065, 12.4536],
+                description: "Beherbergt 54 Galerien, darunter die Sixtinische Kapelle mit Michelangelos Deckenfresken.",
+                visitors: "6 Millionen Besucher/Jahr",
+                wikipedia: "https://de.wikipedia.org/wiki/Vatikanische_Museen"
+            },
+            {
+                name: "Petersdom",
+                coords: [41.9022, 12.4539],
+                description: "Größte Kirche der Welt (Innenfläche: 15.160 m²) mit Michelangelos Pietà und Berninis Baldachin.",
+                visitors: "11 Millionen Besucher/Jahr",
+                wikipedia: "https://de.wikipedia.org/wiki/Petersdom"
+            },
+            {
+                name: "Spanische Treppe",
+                coords: [41.9058, 12.4822],
+                description: "Berühmte 135-stufige Treppe (1723-1725), die die Piazza di Spagna mit der Kirche Trinità dei Monti verbindet.",
+                visitors: "5 Millionen Besucher/Jahr",
+                wikipedia: "https://de.wikipedia.org/wiki/Spanische_Treppe"
+            },
+            {
+                name: "Piazza Navona",
+                coords: [41.8992, 12.4731],
+                description: "Erbaut auf den Ruinen des Stadions von Domitian, mit Berninis Vierströmebrunnen (1651).",
+                visitors: "4,5 Millionen Besucher/Jahr",
+                wikipedia: "https://de.wikipedia.org/wiki/Piazza_Navona"
+            },
+            {
+                name: "Engelsburg",
+                coords: [41.9031, 12.4663],
+                description: "Hadrians Mausoleum (139 n. Chr.), das in eine Festung umgewandelt wurde, mit einem Geheimgang zum Vatikan.",
+                visitors: "1,2 Millionen Besucher/Jahr",
+                wikipedia: "https://de.wikipedia.org/wiki/Engelsburg"
+            },
+            {
+                name: "Galleria Borghese",
+                coords: [41.9142, 12.4922],
+                description: "Beherbergt Meisterwerke von Bernini, Caravaggio, Raffael und Tizian in einer Villa aus dem 17. Jahrhundert.",
+                visitors: "500.000 Besucher/Jahr",
+                wikipedia: "https://de.wikipedia.org/wiki/Galleria_Borghese"
+            }
+        ];
+
+        // Gelbe Markierung erstellen
+        const YellowIcon = L.divIcon({
+            html: '<div class="yellow-marker"></div>',
+            className: 'yellow-marker-icon',
+            iconSize: [24, 24],
+            iconAnchor: [12, 24],
+            popupAnchor: [0, -24]
+        });
+
+        // Array für alle Marker
+        const markers = [];
+        const titleElement = document.querySelector('.map-title');
+
+        // Funktion zur Überprüfung der Überlappung
+        function checkTitleOverlap() {
+            const popups = document.querySelectorAll('.leaflet-popup');
+            let shouldHide = false;
+            
+            popups.forEach(popup => {
+                const titleRect = titleElement.getBoundingClientRect();
+                const popupRect = popup.getBoundingClientRect();
+                
+                // Überprüfen auf Überlappung
+                if (!(popupRect.right < titleRect.left || 
+                      popupRect.left > titleRect.right || 
+                      popupRect.bottom < titleRect.top || 
+                      popupRect.top > titleRect.bottom)) {
+                    shouldHide = true;
+                }
+            });
+            
+            // Titel anpassen
+            if (shouldHide) {
+                titleElement.classList.add('hidden');
+            } else {
+                titleElement.classList.remove('hidden');
+            }
+        }
+
+        // Markierungen hinzufügen
+        landmarks.forEach(landmark => {
+            const marker = L.marker(landmark.coords, { 
+                icon: YellowIcon,
+                interactive: true,
+                riseOnHover: true
+            }).addTo(map);
+            
+            const popupContent = `
+                <div class="landmark-info">
+                    <h3>${landmark.name}</h3>
+                    <p>${landmark.description}</p>
+                    <p><strong>Besucher pro Jahr:</strong> ${landmark.visitors}</p>
+                    <p><a href="${landmark.wikipedia}" target="_blank">Wikipedia →</a></p>
+                </div>
+            `;
+            
+            marker.bindPopup(popupContent);
+            
+            // Event-Listener für Popup-Öffnen/Schließen
+            marker.on('popupopen', () => {
+                checkTitleOverlap();
+                // Regelmäßige Überprüfung bei Bewegung der Karte
+                map.on('move', checkTitleOverlap);
+            });
+            
+            marker.on('popupclose', () => {
+                titleElement.classList.remove('hidden');
+                map.off('move', checkTitleOverlap);
+            });
+            
+            markers.push(marker);
+        });
+
+        // Karte so zoomen, dass alle Marker sichtbar sind
+        const group = new L.featureGroup(markers);
+        map.fitBounds(group.getBounds().pad(0.2)); // 20% padding um die Marker
+    </script>
+</body>
+</html>
